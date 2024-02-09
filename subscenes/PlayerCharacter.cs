@@ -16,6 +16,7 @@ public partial class PlayerCharacter : CharacterBody2D
 	private double clingTimer = clingTimerReset;
 	private bool doubleJumpAvailiable = true;
 	private bool teleportAvailiable = true;
+	private bool wallToRight = false;
 
 	public enum playerStates
 	{
@@ -93,7 +94,7 @@ public partial class PlayerCharacter : CharacterBody2D
 
 		}
 
-		if (Input.IsActionJustPressed("dash"))
+		if (Input.IsActionJustPressed("teleport"))
 		{
 			teleportAvailiable = false;
 			doubleJumpAvailiable = true;
@@ -138,6 +139,7 @@ public partial class PlayerCharacter : CharacterBody2D
 		}
 		if(IsOnWall())
 		{
+			determineDirrectionOfWall();
 			incomingVelocity = Stop;
 			clingTimer = clingTimerReset;
 			//if they are on the wall they are clinging 
@@ -146,7 +148,7 @@ public partial class PlayerCharacter : CharacterBody2D
 			return;
 		}
 
-		if (Input.IsActionJustPressed("dash"))
+		if (Input.IsActionJustPressed("teleport"))
 		{
 			if(teleportAvailiable)
 			{
@@ -190,6 +192,8 @@ public partial class PlayerCharacter : CharacterBody2D
 
 	private void doClingingPhysics(ref Vector2 incomingVelocity, double incomingDelta)
 	{
+
+		
 		if(IsOnFloor())
 		{
 			PlayerState = playerStates.grounded;
@@ -206,6 +210,27 @@ public partial class PlayerCharacter : CharacterBody2D
 
 		if (Input.IsActionJustPressed("jump"))
 		{
+			if (wallToRight)
+			{
+				incomingVelocity.Y = JumpVelocity;
+				incomingVelocity.X = -Speed;
+				PlayerState = playerStates.airborn;
+				if(!sprite_2d.FlipH)
+					sprite_2d.FlipH = true;
+			}
+			else
+			{
+				incomingVelocity.Y = JumpVelocity;
+				incomingVelocity.X = Speed;
+				PlayerState = playerStates.airborn;
+				if(sprite_2d.FlipH)
+					sprite_2d.FlipH = false;
+			}
+			//push away from wall and add jump power
+		}
+		if (Input.IsActionJustPressed("crouch"))
+		{
+			//push away from the wall slightly
 		}
 
 	}
@@ -216,11 +241,13 @@ public partial class PlayerCharacter : CharacterBody2D
 
 		if(!sprite_2d.FlipH)
 		{
+			wallToRight = true;
 			finalVelocity.X = dashSpeed;
 			finalVelocity.Y = 0.0f;
 		}
 		else
 		{
+			wallToRight = false;
 			finalVelocity.X = -dashSpeed;
 			finalVelocity.Y = 0.0f;
 		}
@@ -246,4 +273,14 @@ public partial class PlayerCharacter : CharacterBody2D
 		}
 	}
 
+	private void determineDirrectionOfWall()
+	{
+		for (int i = 0;  i < GetSlideCollisionCount(); i++)
+		{
+			if (GetSlideCollision(i).GetCollider().GetType().FullName == "Godot.TileMap")
+			{
+				wallToRight = GetSlideCollision(i).GetNormal().X > 0 ?  false : true;
+			}
+		}
+	}
 }
